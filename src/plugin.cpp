@@ -1,3 +1,4 @@
+#include "ttpcomm/audio_format_probe_impl.h"
 #include "common.h"
 namespace ttp::mpc {
 HMODULE module{};
@@ -8,10 +9,17 @@ StandardContent standard_content() {
                 return reinterpret_cast<StandardContent>(p);
     return nullptr;
 }
-class Factory final : public ReaderCreator {
+class Factory final : public ReaderCreator, public ttp::format::ProbeSupport {
+protected:
+    DWORD ProbeFamilies() const noexcept override { return ttp::format::Mpc; }
+private:
+
     LONG refs_{1};
 public:
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void **p) override {
+        if (!p) return E_POINTER;
+        if (IsEqualIID(iid, ttp::format::iid_probe)) { *p=static_cast<ttp::format::Probe*>(this); AddRef(); return S_OK; }
+
         if (!p) return E_POINTER; *p=nullptr;
         if (!same(iid,IID_IUnknown) && !same(iid,cat_reader)) return E_NOINTERFACE;
         *p=static_cast<ReaderCreator*>(this); AddRef(); return S_OK;

@@ -26,3 +26,7 @@
 2026-10-19 本机：SV7、SV8 的完整解码 PCM 与原 DLL 逐字节一致；8 字节与 8193 字节输出、7 字节短读、定位、Unicode 标签、增益、清空、宿主写句柄、短写／刷新失败回滚通过。详见 `docs/RECONSTRUCTION.md`。
 
 当前内核 I/O 偏移是有符号 32 位，因此显式拒绝大于 2 GiB 的输入；要求可定位流。保存仅接受本地命名文件，当前事务路径使用 MAX_PATH 内路径。未恢复不存在于原工厂中的 MPC 编码器，也不增加封面接口；已有二进制封面项保存时保留。实际旧系统及原宿主界面验证由集成测试记录单独说明，静态导入检查不等于运行验证。
+
+## 可选格式识别接口
+
+2026-10-20：Reader 工厂增加 Probe，Reader 增加 SourceInfo；旧导出和接口槽位保持不变。声明与辅助实现位于 `include/ttpcomm/audio_format_probe.h` 和 `audio_format_probe_impl.h`，不增加运行时 DLL 依赖。协议原件在相邻 `ttpcomm/sdk/AUDIO_FORMAT_PROBE.md`；新建插件指南在相邻 `rebuild/docs/AUDIO_PLUGIN_DEVELOPMENT_GUIDE.md`。原版播放器继续使用旧接口；错误后缀候选选择和更名提示由支持新协议的重建播放器执行。

@@ -1,8 +1,9 @@
+#include "ttpcomm/audio_format_probe_impl.h"
 #include "metadata.h"
 #include <mpc/mpcdec.h>
 #include <array>
 namespace ttp::mpc {
-class MpcReader final : public Reader,public Metadata,public MetadataCommit {
+class MpcReader final : public Reader,public Metadata,public MetadataCommit, public ttp::format::InfoSupport {
     LONG refs_{1};
     std::unique_ptr<Input> input_;
     mpc_reader callbacks_{};
@@ -31,6 +32,9 @@ class MpcReader final : public Reader,public Metadata,public MetadataCommit {
 public:
     ~MpcReader(){close();}
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid,void **p) override {
+        if (!p) return E_POINTER;
+        if (IsEqualIID(iid, ttp::format::iid_info)) { *p=static_cast<ttp::format::SourceInfo*>(this); AddRef(); return S_OK; }
+
         if(!p)return E_POINTER;*p=nullptr;
         if(same(iid,IID_IUnknown)||same(iid,iid_reader))*p=static_cast<Reader*>(this);
         else if(same(iid,iid_metadata))*p=static_cast<Metadata*>(this);
@@ -39,7 +43,12 @@ public:
     }
     ULONG STDMETHODCALLTYPE AddRef() override{return InterlockedIncrement(&refs_);}
     ULONG STDMETHODCALLTYPE Release() override{auto n=InterlockedDecrement(&refs_);if(!n)delete this;return n;}
-    HRESULT STDMETHODCALLTYPE Open(IStream *s,DWORD f) override {
+    HRESULT STDMETHODCALLTYPE Open(IStream* probe_stream, DWORD probe_flags) override {
+        const auto probed = PrepareFormatInfo(probe_stream, ttp::format::Mpc);
+        if (FAILED(probed)) return probed;
+        return CompleteFormatInfo(OpenImpl(probe_stream, probe_flags));
+    }
+    HRESULT OpenImpl(IStream *s,DWORD f) {
         if(opened_||committed_)return E_UNEXPECTED;
         auto hr=protect([&]{input_=std::make_unique<Input>();input_->open(s);require(input_->seekable,STG_E_INVALIDFUNCTION);require(input_->size>=4&&input_->size<=INT_MAX,HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE));input_->at(0);tags_.load(*input_);input_->at(0);callbacks_={read,at,current,size,seekable,this};decoder_=mpc_demux_init(&callbacks_);check(io_error_);require(decoder_!=nullptr,HRESULT_FROM_WIN32(ERROR_INVALID_DATA));mpc_demux_get_info(decoder_,&info_);require((info_.stream_version==7||info_.stream_version==8)&&info_.sample_freq&&info_.channels>=1&&info_.channels<=2);auto samples=mpc_streaminfo_get_length_samples(&info_);require(samples>=0);total_=uint64_t(samples);format_={WAVE_FORMAT_IEEE_FLOAT,WORD(info_.channels),info_.sample_freq,info_.sample_freq*info_.channels*4,WORD(info_.channels*4),32,0};flags_=f;opened_=true;
             gain_field("replaygain_track_gain",info_.gain_title,false);gain_field("replaygain_track_peak",info_.peak_title,true);gain_field("replaygain_album_gain",info_.gain_album,false);gain_field("replaygain_album_peak",info_.peak_album,true);return S_OK;});
