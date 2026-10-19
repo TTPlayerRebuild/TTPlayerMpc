@@ -1,0 +1,23 @@
+include(FetchContent)
+FetchContent_Declare(musepack
+  URL https://files.musepack.net/source/musepack_src_r475.tar.gz
+  URL_HASH SHA256=a4b1742f997f83e1056142d556a8c20845ba764b70365ff9ccf2e3f81c427b2b
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE SOURCE_SUBDIR no-upstream-cmake)
+FetchContent_MakeAvailable(musepack)
+file(READ "${musepack_SOURCE_DIR}/libmpcdec/huffman.c" huffman_source)
+string(FIND "${huffman_source}" "void huff_init_lut(" huffman_init_at)
+if(huffman_init_at LESS 0)
+  message(FATAL_ERROR "Pinned Musepack Huffman initialization patch no longer matches")
+endif()
+string(REPLACE "void huff_init_lut(" "void ttplayer_huff_init_lut_impl(" huffman_source "${huffman_source}")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/codec-generated")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/codec-generated/huffman.c" "${huffman_source}")
+set(core mpc_decoder streaminfo mpc_bits_reader mpc_demux requant synth_filter)
+set(sources)
+foreach(f IN LISTS core)
+  list(APPEND sources "${musepack_SOURCE_DIR}/libmpcdec/${f}.c")
+endforeach()
+add_library(codec STATIC ${sources} "${CMAKE_CURRENT_BINARY_DIR}/codec-generated/huffman.c")
+target_include_directories(codec PUBLIC "${musepack_SOURCE_DIR}/include" PRIVATE "${musepack_SOURCE_DIR}/libmpcdec")
+target_compile_definitions(codec PUBLIC LONG_SEEK_TABLE PRIVATE _CRT_SECURE_NO_WARNINGS)
+target_compile_options(codec PRIVATE /Os /Gy /Gw /GF /fp:precise /arch:SSE2 /wd4244 /wd4267 /wd4996)

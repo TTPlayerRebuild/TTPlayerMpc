@@ -1,0 +1,27 @@
+#include <winver.h>
+1 VERSIONINFO
+FILEVERSION @MPC_FIXED_VERSION@
+PRODUCTVERSION @MPC_FIXED_VERSION@
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_DLL
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "Sonic853\0"
+      VALUE "FileDescription", "TTPlayer Musepack SV7/SV8 audio add-in\0"
+      VALUE "FileVersion", "@MPC_BUILD_VERSION@\0"
+      VALUE "InternalName", "ttp_mpc\0"
+      VALUE "OriginalFilename", "ttp_mpc.dll\0"
+      VALUE "ProductName", "TTPlayer Rebuild MPC\0"
+      VALUE "ProductVersion", "@MPC_BUILD_VERSION@\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 1200
+  END
+END
