@@ -36,7 +36,12 @@ public:
         }
     }
     void clear(){items.erase(std::remove_if(items.begin(),items.end(),[](const Tag&t){return !(t.flags&6);}),items.end());suffix_.clear();dirty=rg_dirty=true;}
-    std::wstring value(const Tag& t) const {return wide(std::string(t.value.begin(),t.value.end()));}
+    std::vector<std::wstring> values(const Tag& t) const {
+        std::vector<std::wstring> result;size_t from=0;
+        while(from<t.value.size()){auto end=std::find(t.value.begin()+from,t.value.end(),0);result.push_back(wide(std::string(t.value.begin()+from,end)));from=size_t(end-t.value.begin())+1;}
+        if(result.empty())result.push_back(L"");return result;
+    }
+    std::wstring value(const Tag& t) const {std::wstring result;for(const auto& v:values(t)){if(!result.empty())result+=L"; ";result+=v;}return result;}
     void load(Input& in) {
         auto saved=tell(in.stream.p);audio_end_=in.size;
         WIN32_FILE_ATTRIBUTE_DATA attrs{};

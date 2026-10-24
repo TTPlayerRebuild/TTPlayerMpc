@@ -1,5 +1,7 @@
 # TTPlayer Musepack 插件重建
 
+最新补全与验收：[2026-10-24](docs/COMPLETION_20261024.md)。
+
 面向原版千千静听 5.7.9 与重建版的 x86 `ttp_mpc.dll`。唯一导出为 ordinal 1 的 `ttpGetSoundAddIn`，恢复一个 `MPC Reader` 工厂，扩展名 `mpc;mp+`，支持原版已经具备的 SV7 和 SV8。
 
 ## 已实现
